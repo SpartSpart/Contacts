@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <Button
+        android:id="@+id/sendBtn"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentStart="true"
+        android:layout_below="@+id/ExportContacts"
+        android:text="Send to NAS" />
+
+    <Button
+        android:id="@+id/ExportContacts"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Export"
+        tools:layout_editor_absoluteX="97dp"
+        tools:layout_editor_absoluteY="126dp" />
+
+    <ProgressBar
+        android:id="@+id/progressBar"
+        style="?android:attr/progressBarStyleHorizontal"
+        android:layout_width="match_parent"
+        android:layout_height="15dp"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentStart="true"
+        android:layout_below="@+id/sendBtn"
+        android:layout_marginTop="66dp"
+        android:foreground="@android:color/black"
+        android:indeterminate="false" />
+
+    <Button
+        android:id="@+id/sendMailBtn"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentStart="true"
+        android:layout_below="@+id/sendBtn"
+        android:text="Send E-mail" />
+
+
+</RelativeLayout>
