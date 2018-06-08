@@ -8,6 +8,7 @@ import android.content.SharedPreferences;
 import android.content.res.AssetFileDescriptor;
 import android.database.Cursor;
 import android.net.Uri;
+import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Environment;
 import android.os.Handler;
@@ -21,6 +22,7 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.ProgressBar;
 import android.widget.TextView;
@@ -35,6 +37,7 @@ import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.concurrent.TimeUnit;
 
 
 public class MainActivity extends AppCompatActivity {
@@ -51,8 +54,9 @@ public class MainActivity extends AppCompatActivity {
     Button sendBtn;
     Button sendEmailBtn;
    static ProgressBar bar;
+   ProgressBar spinnerBar;
 
-   private ProgressDialog progressDialog = null;
+   boolean transferNasDone = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -61,20 +65,20 @@ public class MainActivity extends AppCompatActivity {
         exportContacts = findViewById(R.id.ExportContacts);
         bar = findViewById(R.id.progressBar);
         bar.setVisibility(ProgressBar.INVISIBLE);
+        spinnerBar=findViewById(R.id.progressBarRound);
+        spinnerBar.setVisibility(View.INVISIBLE);
         exportContacts.setOnClickListener(new View.OnClickListener() {
 
             @Override
             public void onClick(View v) {
-              //  bar();
-                //bar.setVisibility(View.VISIBLE);
-                v.refreshDrawableState();
+
                 try {
                     SharedPreferences share = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
 
                     mContext =getBaseContext();
                     String name =share.getString("filename","");
                     if (!name.equals(""))
-                        getVCF2(name);
+                       new MyAsyncTaskExport().execute(name);
                     else {
                         Toast.makeText(getApplicationContext(), "Check the file name settings", Toast.LENGTH_LONG).show();
                         return;
@@ -83,47 +87,25 @@ public class MainActivity extends AppCompatActivity {
                 }catch (Exception e){
                     Toast.makeText(getApplicationContext(), e.toString(), Toast.LENGTH_LONG).show();
                 }
-                Toast.makeText(getApplicationContext(), "Export success", Toast.LENGTH_LONG).show();
-//
-//               // bar.setVisibility(View.INVISIBLE);
+
             }
         });
         sendBtn = findViewById(R.id.sendBtn);
         sendBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-
-                Boolean success = false;
-                SharedPreferences share = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
-                try {
-                    SendToNas send = new SendToNas();
-                    send.setAuthorization(share.getString("naslogin",""),
-                                          share.getString("naspassword",""),
-                                          share.getString("nasfolder",""));
-                    String baseDir = Environment.getExternalStorageDirectory() + File.separator + "Files";
-                    File lastfile = finder(baseDir);
-
-                        FileInputStream file = new FileInputStream(lastfile);
-                        success=send.copyFiles(file, lastfile.getName());
+               transferNasDone = false;
+                new MyAsyncTaskNas().execute();
+                sendingToNas();
 
 
-
-                    if (success)
-                        Toast.makeText(getApplicationContext(), TRANSFER_OK, Toast.LENGTH_LONG).show();
-                    else
-                        Toast.makeText(getApplicationContext(), TRANSFER_FAIL, Toast.LENGTH_LONG).show();
-
-                }catch (Exception e){
-                    Toast.makeText(getApplicationContext(), TRANSFER_FAIL, Toast.LENGTH_LONG).show();
-                }
             }
         });
         sendEmailBtn = findViewById(R.id.sendMailBtn);
         sendEmailBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                bar.setVisibility(ProgressBar.VISIBLE);
-                bar(view);
+
             }
         });
     }
@@ -149,92 +131,153 @@ public class MainActivity extends AppCompatActivity {
     }
 
     int progressBarValue = 0;
-    Handler handler = new Handler();
 
-    public void getVCF2(String name){
+    private class MyAsyncTaskNas extends AsyncTask<Void,Void,Void> {
+
+        @Override
+        protected Void doInBackground(Void... voids) {
+            while(transferNasDone==false){
+                try{
+                    TimeUnit.MILLISECONDS.sleep(100);
+                }catch (Exception ignore){}
 
 
-        String timeStamp = new SimpleDateFormat(" (dd_MM_yyyy)").format(Calendar.getInstance().getTime());
-        final String vfile = name + timeStamp + ".vcf";
-        final String path;
+            }
 
-        final Cursor phones = mContext.getContentResolver().query(ContactsContract.CommonDataKinds.Phone.CONTENT_URI, null, null, null, null);
 
-        phones.moveToFirst();
+        return null;
+        }
+
+        @Override
+        protected void onPreExecute() {
+            super.onPreExecute();
+            spinnerBar.setVisibility(View.VISIBLE);
+            getWindow().setFlags(WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE,
+                    WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE);
+        }
+
+        @Override
+        protected void onPostExecute(Void aVoid) {
+            super.onPostExecute(aVoid);
+            spinnerBar.setVisibility(View.INVISIBLE);
+            getWindow().clearFlags(WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE);
+        }
+    }
+
+    boolean sendingToNas(){
+        Boolean success = false;
+        transferNasDone = false;
+        SharedPreferences share = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
         try {
+            SendToNas send = new SendToNas();
+            send.setAuthorization(share.getString("naslogin", ""),
+                    share.getString("naspassword", ""),
+                    share.getString("nasfolder", ""));
             String baseDir = Environment.getExternalStorageDirectory() + File.separator + "Files";
-            File directory = new File(baseDir);
-            if (!directory.exists())
-                directory.mkdirs();
+            File lastfile = finder(baseDir);
 
-            path = baseDir + File.separator + vfile;
-            File file = new File(path);
-            if (file.exists())
-                file.delete();
+            FileInputStream file = new FileInputStream(lastfile);
+            success = send.copyFiles(file, lastfile.getName());
+
+
+            if (success)
+                Toast.makeText(getApplicationContext(), TRANSFER_OK, Toast.LENGTH_LONG).show();
+            else
+                Toast.makeText(getApplicationContext(), TRANSFER_FAIL, Toast.LENGTH_LONG).show();
+
         } catch (Exception e) {
-            return;
+            Toast.makeText(getApplicationContext(), TRANSFER_FAIL, Toast.LENGTH_LONG).show();
         }
+        transferNasDone = true;
+        return success;
+    }
 
-        progressBarValue = 0;
-        bar.setProgress(progressBarValue);
-        bar.setMax(phones.getCount());
+    private class MyAsyncTaskExport extends AsyncTask<String,Integer,Void>{
 
-        new Thread(new Runnable() {
+        int count;
+        @Override
+        protected Void doInBackground(String... strings) {
+            String timeStamp = new SimpleDateFormat(" (dd_MM_yyyy)").format(Calendar.getInstance().getTime());
+            final String vfile = strings[0] + timeStamp + ".vcf";
+            String path="";
 
-            @Override
-            public void run() {
+            final Cursor phones = mContext.getContentResolver().query(ContactsContract.CommonDataKinds.Phone.CONTENT_URI, null, null, null, null);
 
-                while(progressBarValue < 10000)
-                {
-                    progressBarValue++;
-                    bar.setProgress(progressBarValue);
+            phones.moveToFirst();
+            try {
+                String baseDir = Environment.getExternalStorageDirectory() + File.separator + "Files";
+                File directory = new File(baseDir);
+                if (!directory.exists())
+                    directory.mkdirs();
 
-                    try {
-                        String lookupKey = phones.getString(phones.getColumnIndex(ContactsContract.Contacts.LOOKUP_KEY));
-                        Uri uri = Uri.withAppendedPath(ContactsContract.Contacts.CONTENT_VCARD_URI, lookupKey);
-                        AssetFileDescriptor fd;
-                        fd = mContext.getContentResolver().openAssetFileDescriptor(uri, "r");
-                        FileInputStream fis = fd.createInputStream();
-                        byte[] buf = new byte[(int) fd.getDeclaredLength()];
-                        fis.read(buf);
-                        String VCard = new String(buf);
-                        FileOutputStream mFileOutputStream = new FileOutputStream(path, true);
-                        mFileOutputStream.write(VCard.toString().getBytes());
-                        phones.moveToNext();
-                        Log.d("Vcard", VCard);
-                        //Thread.sleep(100);
-                    } catch (Exception e1) {
-                        Toast.makeText(mContext, e1.toString(), Toast.LENGTH_LONG).show();
+                path = baseDir + File.separator + vfile;
+                File file = new File(path);
+                if (file.exists())
+                    file.delete();
+            } catch (Exception ignore) {}
+
+            count = phones.getCount();
+            bar.setProgress(0);
+            bar.setMax(count-1);
+
+                    for (int i = 0;i<count;i++)
+                    {
+
+                        try {
+                            String lookupKey = phones.getString(phones.getColumnIndex(ContactsContract.Contacts.LOOKUP_KEY));
+                            Uri uri = Uri.withAppendedPath(ContactsContract.Contacts.CONTENT_VCARD_URI, lookupKey);
+                            AssetFileDescriptor fd;
+                            fd = mContext.getContentResolver().openAssetFileDescriptor(uri, "r");
+                            FileInputStream fis = fd.createInputStream();
+                            byte[] buf = new byte[(int) fd.getDeclaredLength()];
+                            fis.read(buf);
+                            String VCard = new String(buf);
+                            FileOutputStream mFileOutputStream = new FileOutputStream(path, true);
+                            mFileOutputStream.write(VCard.toString().getBytes());
+                            phones.moveToNext();
+                            Log.d("Vcard", VCard);
+
+                            TimeUnit.MILLISECONDS.sleep(50);
+                        } catch (Exception e1) {
+                            Toast.makeText(mContext, e1.toString(), Toast.LENGTH_LONG).show();
+                        }
+                        publishProgress(i);
                     }
-                }
-                try {
 
-                }catch (Exception e){Toast.makeText(mContext, e.toString(), Toast.LENGTH_LONG).show();}
-            }
-
-        } ).start();
-        System.out.println("");
-
+            return null;
         }
 
+        @Override
+        protected void onPreExecute() {
+            super.onPreExecute();
+            bar.setProgress(0);
+            bar.setVisibility(View.VISIBLE);
+            getWindow().setFlags(WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE,
+                    WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE);
+        }
+
+        @Override
+        protected void onProgressUpdate(Integer... values) {
+            super.onProgressUpdate(values);
+            bar.setProgress(values[0]);
+        }
+
+        @Override
+        protected void onPostExecute(Void aVoid) {
+            super.onPostExecute(aVoid);
+            bar.setVisibility(View.INVISIBLE);
+            getWindow().clearFlags(WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE);
+            Toast.makeText(mContext, "Export "+count+" records success", Toast.LENGTH_LONG).show();
+        }
+    }
 
 
-    void bar(View v){
 
-        progressBarValue = 0;
-        bar.setProgress(0);
-        bar.setMax(300000);
-                while(progressBarValue < 300000)
-                {
-                    progressBarValue++;
-                    bar.setProgress(progressBarValue);
-                }
-            }
 
     String baseDirr = Environment.getExternalStorageDirectory() + File.separator + "Files";
 
 
-    public void send() {
+    public void sendMail() {
         String filename = "Contacts (01.06.2018.vcf)";
         File filelocation = new File(baseDirr, filename);
         Uri path = Uri.fromFile(filelocation);
@@ -267,26 +310,6 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
-    private void showProgress(String text) {
-
-        if (progressDialog == null) {
-            try {
-                progressDialog = ProgressDialog.show(this, "", text);
-                progressDialog.setCancelable(false);
-            } catch (Exception e) {
-
-            }
-
-        }
-
-    }
-    public void hideProgress() {
-
-        if (progressDialog != null) {
-            progressDialog.dismiss();
-            progressDialog = null;
-        }
-    }
 
 
 }
