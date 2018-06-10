@@ -1,31 +1,109 @@
 package com.spart.spart.contacts;
 
-import android.content.Intent;
-import android.net.Uri;
-import android.os.Environment;
-import android.support.v7.app.AppCompatActivity;
+import android.app.Activity;
 
-import java.io.File;
+import java.util.Properties;
 
-import static android.support.v4.content.ContextCompat.startActivity;
+import javax.activation.CommandMap;
+import javax.activation.DataHandler;
+import javax.activation.DataSource;
+import javax.activation.FileDataSource;
+import javax.activation.MailcapCommandMap;
+import javax.mail.BodyPart;
+import javax.mail.Message;
+import javax.mail.MessagingException;
+import javax.mail.Multipart;
+import javax.mail.PasswordAuthentication;
+import javax.mail.Session;
+import javax.mail.Transport;
+import javax.mail.internet.InternetAddress;
+import javax.mail.internet.MimeBodyPart;
+import javax.mail.internet.MimeMessage;
+import javax.mail.internet.MimeMultipart;
 
-public class SendEmail extends AppCompatActivity {
-    String baseDir = Environment.getExternalStorageDirectory() + File.separator + "Files";
-   // String path = baseDir + File.separator + "Contacts (01.06.2018.vcf)";
+public class SendEmail {
+    boolean send(String filepath,String email,String subj)
+    {
 
-    public void send() {
-        String filename = "Contacts (01.06.2018.vcf)";
-        File filelocation = new File(baseDir, filename);
-        Uri path = Uri.fromFile(filelocation);
-        Intent emailIntent = new Intent(Intent.ACTION_SEND);
-// set the type to 'email'
-        emailIntent.setType("plain/text");
-        String to[] = {"spart_85@inbox.ru"};
-        emailIntent.putExtra(Intent.EXTRA_EMAIL, to);
-// the attachment
-        emailIntent.putExtra(Intent.EXTRA_STREAM, path);
-// the mail subject
-        emailIntent.putExtra(Intent.EXTRA_SUBJECT, "Subject");
-        startActivity(Intent.createChooser(emailIntent, "Send email..."));
+        // Recipient's email ID needs to be mentioned.
+        String to = email;
+        String subject = subj;
+        final String from = "robojavamail@gmail.com";
+        final String pass = "AndroidMail1234";
+        // Assuming you are sending email from localhost
+        String host = "smtp.gmail.com";
+
+        // Get system properties
+        Properties properties = System.getProperties();
+
+        // Setup mail server
+        properties.setProperty("mail.smtp.host", host);
+        properties.put("mail.smtp.user", from);
+        properties.put("mail.smtp.password", pass);
+        properties.put("mail.smtp.port", "587");
+        properties.put("mail.smtp.starttls.enable","true");
+        properties.put("mail.smtp.auth", "true");
+
+        // Get the default Session object.
+        //Session session = Session.getDefaultInstance(properties);
+
+
+        Session session = Session.getInstance(properties, new javax.mail.Authenticator() {
+            protected PasswordAuthentication getPasswordAuthentication() {
+                return new PasswordAuthentication(from, pass);
+            }
+        });
+
+
+        try{
+            // Create a default MimeMessage object.
+            MimeMessage message = new MimeMessage(session);
+
+            // Set From: header field of the header.
+            message.setFrom(new InternetAddress(from));
+
+            // Set To: header field of the header.
+            message.addRecipient(Message.RecipientType.TO,
+                    new InternetAddress(to));
+
+            // Set Subject: header field
+            message.setSubject(subject);
+
+            // Create the message part
+            BodyPart messageBodyPart = new MimeBodyPart();
+
+            // Fill the message
+            messageBodyPart.setText(subject);
+
+            // Create a multipar message
+            Multipart multipart = new MimeMultipart();
+
+            // Set text message part
+            multipart.addBodyPart(messageBodyPart);
+
+            // Part two is attachment
+            messageBodyPart = new MimeBodyPart();
+            DataSource source = new FileDataSource(filepath);
+            messageBodyPart.setDataHandler(new DataHandler(source));
+            messageBodyPart.setFileName(filepath);
+            multipart.addBodyPart(messageBodyPart);
+
+
+            MailcapCommandMap mc = (MailcapCommandMap) CommandMap.getDefaultCommandMap();
+            mc.addMailcap("text/html;; x-java-content-handler=com.sun.mail.handlers.text_html");
+            mc.addMailcap("text/xml;; x-java-content-handler=com.sun.mail.handlers.text_xml");
+            mc.addMailcap("text/plain;; x-java-content-handler=com.sun.mail.handlers.text_plain");
+            mc.addMailcap("multipart/*;; x-java-content-handler=com.sun.mail.handlers.multipart_mixed");
+            mc.addMailcap("message/rfc822;; x-java-content- handler=com.sun.mail.handlers.message_rfc822");
+
+            // Send the complete message parts
+            message.setContent(multipart);
+            // Send message
+            Transport.send(message);
+            //System.out.println("Sent message successfully....");
+        }catch (MessagingException mex) {
+            return false;
+        }
+        return true;
     }
 }

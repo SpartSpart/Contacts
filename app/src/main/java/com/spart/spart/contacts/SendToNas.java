@@ -15,21 +15,18 @@ public class SendToNas {
     String NETWORK_FOLDER;// = "smb://192.168.1...";
     public boolean copyFiles(FileInputStream file, String fileName) {
         boolean successful = false;
-        int cursor;
         SmbFileOutputStream sfos;
         SmbFile sFile;
         String path;
         NtlmPasswordAuthentication auth;
         try{
             String user = USER_NAME + ":" + PASSWORD;
-            System.out.println("User: " + user);
 
             auth = new NtlmPasswordAuthentication(user);
             StrictMode.ThreadPolicy tp = StrictMode.ThreadPolicy.LAX;
             StrictMode.setThreadPolicy(tp);
 
             path = NETWORK_FOLDER + fileName;
-            System.out.println("Path: " +path);
 
             sFile = new SmbFile(path, auth);
             sfos = new SmbFileOutputStream(sFile);

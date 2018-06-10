@@ -1,7 +1,6 @@
 package com.spart.spart.contacts;
 
 
-import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -11,8 +10,6 @@ import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Environment;
-import android.os.Handler;
-import android.os.Looper;
 import android.preference.PreferenceManager;
 import android.provider.ContactsContract;
 import android.support.annotation.RequiresApi;
@@ -25,7 +22,6 @@ import android.view.View;
 import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.ProgressBar;
-import android.widget.TextView;
 import android.widget.Toast;
 import java.io.File;
 import java.io.FileInputStream;
@@ -105,6 +101,11 @@ public class MainActivity extends AppCompatActivity {
         sendEmailBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
+                try {
+                    new MailAsyncTask().execute(getSharedValue("email"));
+                } catch (Exception e) {
+                    Toast.makeText(getApplicationContext(), e.toString(), Toast.LENGTH_LONG).show();
+                }
 
             }
         });
@@ -130,7 +131,7 @@ public class MainActivity extends AppCompatActivity {
             return super.onOptionsItemSelected(item);
     }
 
-    int progressBarValue = 0;
+
 
     private class MyAsyncTaskNas extends AsyncTask<Void,Void,Void> {
 
@@ -138,7 +139,7 @@ public class MainActivity extends AppCompatActivity {
         protected Void doInBackground(Void... voids) {
             while(transferNasDone==false){
                 try{
-                    TimeUnit.MILLISECONDS.sleep(100);
+                    TimeUnit.MILLISECONDS.sleep(1000);
                 }catch (Exception ignore){}
 
 
@@ -161,6 +162,36 @@ public class MainActivity extends AppCompatActivity {
             super.onPostExecute(aVoid);
             spinnerBar.setVisibility(View.INVISIBLE);
             getWindow().clearFlags(WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE);
+        }
+    }
+
+
+    private class MailAsyncTask extends AsyncTask<String, Void, Boolean> {
+
+
+        @Override
+        protected Boolean doInBackground(String... strings) {
+            boolean flag = true;
+            try {
+                String email = strings[0];
+                String filepath = Environment.getExternalStorageDirectory() + File.separator + "Files";// + File.separator + "file.txt";
+                File lastfile = finder(filepath);
+                SendEmail send = new SendEmail();
+                flag = send.send(lastfile.getAbsolutePath(), email,lastfile.getName());
+            }catch (Exception e){
+                flag = false;
+            }
+
+            return flag;
+        }
+
+        @Override
+        protected void onPostExecute(Boolean result) {
+            super.onPostExecute(result);
+            if (result)
+                Toast.makeText(getApplicationContext(), "File sent", Toast.LENGTH_LONG).show();
+            else
+                Toast.makeText(getApplicationContext(), "Something wrong", Toast.LENGTH_LONG).show();
         }
     }
 
@@ -192,11 +223,12 @@ public class MainActivity extends AppCompatActivity {
         return success;
     }
 
-    private class MyAsyncTaskExport extends AsyncTask<String,Integer,Void>{
+    private class MyAsyncTaskExport extends AsyncTask<String,Integer,Boolean>{
 
         int count;
         @Override
-        protected Void doInBackground(String... strings) {
+        protected Boolean doInBackground(String... strings) {
+            boolean flag = true;
             String timeStamp = new SimpleDateFormat(" (dd_MM_yyyy)").format(Calendar.getInstance().getTime());
             final String vfile = strings[0] + timeStamp + ".vcf";
             String path="";
@@ -214,7 +246,10 @@ public class MainActivity extends AppCompatActivity {
                 File file = new File(path);
                 if (file.exists())
                     file.delete();
-            } catch (Exception ignore) {}
+            } catch (Exception ignore) {
+                flag = false;
+                return flag;
+            }
 
             count = phones.getCount();
             bar.setProgress(0);
@@ -239,12 +274,13 @@ public class MainActivity extends AppCompatActivity {
 
                             TimeUnit.MILLISECONDS.sleep(50);
                         } catch (Exception e1) {
-                            Toast.makeText(mContext, e1.toString(), Toast.LENGTH_LONG).show();
+                            flag = false;
+                            return flag;
                         }
                         publishProgress(i);
                     }
 
-            return null;
+            return flag;
         }
 
         @Override
@@ -263,38 +299,19 @@ public class MainActivity extends AppCompatActivity {
         }
 
         @Override
-        protected void onPostExecute(Void aVoid) {
-            super.onPostExecute(aVoid);
+        protected void onPostExecute(Boolean result) {
+            super.onPostExecute(result);
             bar.setVisibility(View.INVISIBLE);
             getWindow().clearFlags(WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE);
-            Toast.makeText(mContext, "Export "+count+" records success", Toast.LENGTH_LONG).show();
+            if (result)
+                Toast.makeText(mContext, "Export "+count+" records success", Toast.LENGTH_LONG).show();
+            else
+                Toast.makeText(mContext, "Something wrong", Toast.LENGTH_LONG).show();
         }
     }
 
 
-
-
-    String baseDirr = Environment.getExternalStorageDirectory() + File.separator + "Files";
-
-
-    public void sendMail() {
-        String filename = "Contacts (01.06.2018.vcf)";
-        File filelocation = new File(baseDirr, filename);
-        Uri path = Uri.fromFile(filelocation);
-        Intent emailIntent = new Intent(Intent.ACTION_SEND);
-// set the type to 'email'
-        emailIntent.setType("plain/text");
-        String to[] = {"spart_85@inbox.ru"};
-        emailIntent.putExtra(Intent.EXTRA_EMAIL, to);
-// the attachment
-        emailIntent.putExtra(Intent.EXTRA_STREAM, path);
-// the mail subject
-        emailIntent.putExtra(Intent.EXTRA_SUBJECT, "Subject");
-       this.startActivity(Intent.createChooser(emailIntent, "Send email..."));
-    }
-
-
-    public File finder(String dirName){
+   public File finder(String dirName){
         File dir = new File(dirName);
         File files[]= dir.listFiles(new FilenameFilter() {
             public boolean accept(File dir, String filename)
@@ -310,7 +327,10 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
-
+String getSharedValue(String name) {
+    SharedPreferences share = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
+    return share.getString(name, "");
+}
 
 }
 

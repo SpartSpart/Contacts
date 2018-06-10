@@ -12,6 +12,7 @@
         android:layout_alignParentLeft="true"
         android:layout_alignParentStart="true"
         android:layout_below="@+id/ExportContacts"
+        android:layout_marginTop="13dp"
         android:text="Send to NAS" />
 
     <Button
@@ -29,8 +30,8 @@
         android:layout_height="15dp"
         android:layout_alignParentLeft="true"
         android:layout_alignParentStart="true"
-        android:layout_below="@+id/sendBtn"
-        android:layout_marginTop="66dp"
+        android:layout_below="@+id/sendMailBtn"
+        android:layout_marginTop="41dp"
         android:foreground="@android:color/black"
         android:indeterminate="false" />
 
@@ -41,6 +42,7 @@
         android:layout_alignParentLeft="true"
         android:layout_alignParentStart="true"
         android:layout_below="@+id/sendBtn"
+        android:layout_marginTop="15dp"
         android:text="Send E-mail" />
 
     <ProgressBar
@@ -50,7 +52,7 @@
         android:layout_height="35dp"
         android:layout_alignParentLeft="true"
         android:layout_alignParentStart="true"
-        android:layout_marginTop="156dp"
+        android:layout_alignTop="@+id/progressBar"
         android:foreground="@android:color/black"
         android:indeterminate="true" />
 
