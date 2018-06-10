@@ -7,19 +7,20 @@
 
     <Button
         android:id="@+id/sendBtn"
+        style="@style/RoundedCornerButton"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_alignParentLeft="true"
         android:layout_alignParentStart="true"
         android:layout_below="@+id/ExportContacts"
-        android:layout_marginTop="13dp"
         android:text="Send to NAS" />
 
     <Button
         android:id="@+id/ExportContacts"
+        style="@style/RoundedCornerButton"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Export"
+        android:text=" Export Contacts"
         tools:layout_editor_absoluteX="97dp"
         tools:layout_editor_absoluteY="126dp" />
 
@@ -37,13 +38,13 @@
 
     <Button
         android:id="@+id/sendMailBtn"
+        style="@style/RoundedCornerButton"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_alignParentLeft="true"
         android:layout_alignParentStart="true"
         android:layout_below="@+id/sendBtn"
-        android:layout_marginTop="15dp"
-        android:text="Send E-mail" />
+        android:text="Send to E-Mail" />
 
     <ProgressBar
         android:id="@+id/progressBarRound"

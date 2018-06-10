@@ -10,8 +10,8 @@ import jcifs.smb.SmbFileOutputStream;
 
 public class SendToNas {
 
-    String USER_NAME;// ="111";
-    String PASSWORD;// = "12345678";
+    String USER_NAME;
+    String PASSWORD;
     String NETWORK_FOLDER;// = "smb://192.168.1...";
     public boolean copyFiles(FileInputStream file, String fileName) {
         boolean successful = false;
@@ -21,11 +21,9 @@ public class SendToNas {
         NtlmPasswordAuthentication auth;
         try{
             String user = USER_NAME + ":" + PASSWORD;
-
             auth = new NtlmPasswordAuthentication(user);
             StrictMode.ThreadPolicy tp = StrictMode.ThreadPolicy.LAX;
             StrictMode.setThreadPolicy(tp);
-
             path = NETWORK_FOLDER + fileName;
 
             sFile = new SmbFile(path, auth);
@@ -37,22 +35,18 @@ public class SendToNas {
             int n, tot = 0;
             Log.d("asdf","initiating : total="+tot);
 
-
             while((n = file.read(b))>0){
                 sfos.write( b, 0, n );
                 tot += n;
-                Log.d("asdf","writing : total="+tot);
+  //              Log.d("asdf","writing : total="+tot);
             }
             successful = true;
-            Log.d("asdf","Successful : total="+tot);
-
+//            Log.d("asdf","Successful : total="+tot);
         }
-
         catch (Exception e) {
             successful = false;
             e.printStackTrace();
             Log.d("asdf","exxeption ");
-
         }
         return successful;
     }
@@ -61,6 +55,5 @@ public class SendToNas {
          USER_NAME=login;
          PASSWORD = password;
          NETWORK_FOLDER = "smb:"+folder;
-
     }
 }

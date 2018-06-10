@@ -54,6 +54,7 @@
         android:inputType="textEmailAddress" />
 
     <Button
+        style="@style/RoundedCornerButton"
         android:id="@+id/save_Btn"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"

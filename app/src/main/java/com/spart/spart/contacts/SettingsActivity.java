@@ -9,7 +9,6 @@ import android.widget.Button;
 import android.widget.EditText;
 
 public class SettingsActivity extends AppCompatActivity {
-    //private static SharedPreferences sharedPreferences;
     Button saveBtn;
     EditText fileName,
              nasFolder,
@@ -63,12 +62,7 @@ public class SettingsActivity extends AppCompatActivity {
         });
     }
 
-    String getAuthorization(){
-        sharedPreferences= PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
-        return sharedPreferences.getString("naslogin","Spart");
-    }
-
-    void finishactivity(){
+   void finishactivity(){
         this.finish();
     }
 }

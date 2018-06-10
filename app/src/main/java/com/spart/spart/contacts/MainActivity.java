@@ -28,7 +28,6 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.FilenameFilter;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Collections;
@@ -42,9 +41,6 @@ public class MainActivity extends AppCompatActivity {
     String TRANSFER_FAIL = "Transfer failed";
 
     Menu menu;
-    Cursor cursor;
-    ArrayList<String> vCard;
-    String vfile;
     Context mContext;
     Button exportContacts;
     Button sendBtn;
@@ -92,7 +88,7 @@ public class MainActivity extends AppCompatActivity {
             public void onClick(View v) {
                transferNasDone = false;
                 new MyAsyncTaskNas().execute();
-                sendingToNas();
+
 
 
             }
@@ -131,22 +127,19 @@ public class MainActivity extends AppCompatActivity {
             return super.onOptionsItemSelected(item);
     }
 
-
-
-    private class MyAsyncTaskNas extends AsyncTask<Void,Void,Void> {
+    private class MyAsyncTaskNas extends AsyncTask<Void,Void,Boolean> {
 
         @Override
-        protected Void doInBackground(Void... voids) {
-            while(transferNasDone==false){
+        protected Boolean doInBackground(Void... voids) {
+            boolean flag = true;
                 try{
                     TimeUnit.MILLISECONDS.sleep(1000);
-                }catch (Exception ignore){}
+                    flag = sendingToNas();
+                }catch (Exception ignore){
+                    flag = false;
+                }
 
-
-            }
-
-
-        return null;
+        return flag;
         }
 
         @Override
@@ -154,20 +147,30 @@ public class MainActivity extends AppCompatActivity {
             super.onPreExecute();
             spinnerBar.setVisibility(View.VISIBLE);
             getWindow().setFlags(WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE,
-                    WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE);
+                                 WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE);
         }
 
         @Override
-        protected void onPostExecute(Void aVoid) {
-            super.onPostExecute(aVoid);
+        protected void onPostExecute(Boolean result) {
+            super.onPostExecute(result);
             spinnerBar.setVisibility(View.INVISIBLE);
             getWindow().clearFlags(WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE);
+            if (result)
+                Toast.makeText(getApplicationContext(), TRANSFER_OK, Toast.LENGTH_LONG).show();
+            else
+                Toast.makeText(getApplicationContext(), TRANSFER_FAIL, Toast.LENGTH_LONG).show();
         }
     }
 
 
     private class MailAsyncTask extends AsyncTask<String, Void, Boolean> {
-
+        @Override
+        protected void onPreExecute() {
+            super.onPreExecute();
+            spinnerBar.setVisibility(View.VISIBLE);
+            getWindow().setFlags(WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE,
+                    WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE);
+        }
 
         @Override
         protected Boolean doInBackground(String... strings) {
@@ -181,13 +184,14 @@ public class MainActivity extends AppCompatActivity {
             }catch (Exception e){
                 flag = false;
             }
-
             return flag;
         }
 
         @Override
         protected void onPostExecute(Boolean result) {
             super.onPostExecute(result);
+            spinnerBar.setVisibility(View.INVISIBLE);
+            getWindow().clearFlags(WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE);
             if (result)
                 Toast.makeText(getApplicationContext(), "File sent", Toast.LENGTH_LONG).show();
             else
@@ -209,32 +213,23 @@ public class MainActivity extends AppCompatActivity {
 
             FileInputStream file = new FileInputStream(lastfile);
             success = send.copyFiles(file, lastfile.getName());
-
-
-            if (success)
-                Toast.makeText(getApplicationContext(), TRANSFER_OK, Toast.LENGTH_LONG).show();
-            else
-                Toast.makeText(getApplicationContext(), TRANSFER_FAIL, Toast.LENGTH_LONG).show();
-
         } catch (Exception e) {
-            Toast.makeText(getApplicationContext(), TRANSFER_FAIL, Toast.LENGTH_LONG).show();
+            success = false;
         }
         transferNasDone = true;
         return success;
     }
 
     private class MyAsyncTaskExport extends AsyncTask<String,Integer,Boolean>{
-
         int count;
+
         @Override
         protected Boolean doInBackground(String... strings) {
             boolean flag = true;
             String timeStamp = new SimpleDateFormat(" (dd_MM_yyyy)").format(Calendar.getInstance().getTime());
             final String vfile = strings[0] + timeStamp + ".vcf";
             String path="";
-
             final Cursor phones = mContext.getContentResolver().query(ContactsContract.CommonDataKinds.Phone.CONTENT_URI, null, null, null, null);
-
             phones.moveToFirst();
             try {
                 String baseDir = Environment.getExternalStorageDirectory() + File.separator + "Files";
@@ -244,6 +239,7 @@ public class MainActivity extends AppCompatActivity {
 
                 path = baseDir + File.separator + vfile;
                 File file = new File(path);
+
                 if (file.exists())
                     file.delete();
             } catch (Exception ignore) {
@@ -279,7 +275,6 @@ public class MainActivity extends AppCompatActivity {
                         }
                         publishProgress(i);
                     }
-
             return flag;
         }
 
@@ -289,7 +284,7 @@ public class MainActivity extends AppCompatActivity {
             bar.setProgress(0);
             bar.setVisibility(View.VISIBLE);
             getWindow().setFlags(WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE,
-                    WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE);
+                                 WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE);
         }
 
         @Override
@@ -310,7 +305,6 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-
    public File finder(String dirName){
         File dir = new File(dirName);
         File files[]= dir.listFiles(new FilenameFilter() {
@@ -324,14 +318,12 @@ public class MainActivity extends AppCompatActivity {
             }
         });
         return files[files.length-1];
-
     }
 
 String getSharedValue(String name) {
     SharedPreferences share = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
     return share.getString(name, "");
-}
-
+    }
 }
 
 
